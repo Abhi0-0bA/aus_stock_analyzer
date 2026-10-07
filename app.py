@@ -1,3 +1,5 @@
+import html
+
 import streamlit as st
 import plotly.graph_objects as go
 from modules.fetcher import get_stock_data, get_live_price, scrape_company_website
@@ -186,8 +188,12 @@ elif st.session_state.page == 'analysis':
         news = data['news']
         
         # Header
-        st.markdown(f"<h1 style='font-size: 3rem;'>{info.get('longName', 'Unknown')}</h1>", unsafe_allow_html=True)
-        st.markdown(f"<p style='font-size: 1.2rem; color: gray;'>{info.get('sector', 'N/A')} — {info.get('industry', 'N/A')}</p>", unsafe_allow_html=True)
+        # Values come from an external API and are rendered as raw HTML, so escape them.
+        company_name = html.escape(str(info.get('longName') or info.get('shortName') or ticker))
+        sector = html.escape(str(info.get('sector', 'N/A')))
+        industry = html.escape(str(info.get('industry', 'N/A')))
+        st.markdown(f"<h1 style='font-size: 3rem;'>{company_name}</h1>", unsafe_allow_html=True)
+        st.markdown(f"<p style='font-size: 1.2rem; color: gray;'>{sector} — {industry}</p>", unsafe_allow_html=True)
         
         # Price & Metrics
         live_price = load_latest_price(ticker)
