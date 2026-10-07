@@ -46,6 +46,73 @@ def get_dividend_yield_pct(info, price=None):
     return annual_dividend / price * 100
 
 
+def _to_float(value):
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if number == number else None  # filter out NaN
+
+
+def _money(value):
+    number = _to_float(value)
+    return f"${number:,.2f}" if number is not None else None
+
+
+def _compact(value):
+    number = _to_float(value)
+    if number is None:
+        return None
+    for limit, suffix in ((1e9, "B"), (1e6, "M"), (1e3, "K")):
+        if abs(number) >= limit:
+            return f"{number / limit:.2f}{suffix}"
+    return f"{number:,.0f}"
+
+
+def _range(low, high):
+    low, high = _money(low), _money(high)
+    return f"{low} – {high}" if low and high else None
+
+
+def build_key_stats(info):
+    """
+    Returns a list of (label, value) pairs for the key statistics panel,
+    skipping anything Yahoo didn't provide. Only fields with unambiguous
+    units are used (prices, counts and plain ratios).
+    """
+    if not info:
+        return []
+
+    pe_forward = _to_float(info.get("forwardPE"))
+    beta = _to_float(info.get("beta"))
+    price_to_book = _to_float(info.get("priceToBook"))
+    employees = _to_float(info.get("fullTimeEmployees"))
+
+    consensus = None
+    recommendation = info.get("recommendationKey")
+    if recommendation and recommendation != "none":
+        consensus = str(recommendation).replace("_", " ").title()
+        analysts = _to_float(info.get("numberOfAnalystOpinions"))
+        if analysts:
+            consensus += f" ({analysts:.0f} analysts)"
+
+    stats = [
+        ("Previous close", _money(info.get("previousClose"))),
+        ("Day range", _range(info.get("dayLow"), info.get("dayHigh"))),
+        ("52-week range", _range(info.get("fiftyTwoWeekLow"), info.get("fiftyTwoWeekHigh"))),
+        ("Volume", _compact(info.get("volume"))),
+        ("Avg. volume", _compact(info.get("averageVolume"))),
+        ("EPS (trailing)", _money(info.get("trailingEps"))),
+        ("Forward P/E", f"{pe_forward:.2f}" if pe_forward is not None else None),
+        ("Price / book", f"{price_to_book:.2f}" if price_to_book is not None else None),
+        ("Beta", f"{beta:.2f}" if beta is not None else None),
+        ("Analyst target (mean)", _money(info.get("targetMeanPrice"))),
+        ("Analyst consensus", consensus),
+        ("Employees", f"{employees:,.0f}" if employees else None),
+    ]
+    return [(label, value) for label, value in stats if value]
+
+
 def format_news(news_list):
     """
     Formats the raw news list into a readable string.

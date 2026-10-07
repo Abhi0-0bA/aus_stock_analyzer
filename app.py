@@ -3,7 +3,7 @@ import html
 import streamlit as st
 import plotly.graph_objects as go
 from modules.fetcher import get_stock_data, get_live_price, scrape_company_website, normalize_ticker
-from modules.analyzer import parse_news_item, get_dividend_yield_pct
+from modules.analyzer import parse_news_item, get_dividend_yield_pct, build_key_stats
 
 st.set_page_config(
     page_title="Australian Stock Market Analyzer", 
@@ -79,6 +79,25 @@ st.markdown("""
         letter-spacing: 0.08em;
         font-size: 0.8rem !important;
         opacity: 0.75;
+    }
+
+    /* Key statistics grid: as many columns as fit, so it adapts from phone to 2K */
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+        gap: 1.25rem 2rem;
+        margin: 0.5rem 0 1rem;
+    }
+    .stat-grid .stat-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        opacity: 0.7;
+    }
+    .stat-grid .stat-value {
+        font-size: 1.1rem;
+        font-weight: 500;
+        margin-top: 0.15rem;
     }
 
     /* Buttons (colours from the theme's primary colour) */
@@ -239,6 +258,19 @@ elif st.session_state.page == 'analysis':
             ))
             fig_vol.update_layout(**chart_layout)
             st.plotly_chart(fig_vol, width="stretch")
+
+        # Key statistics
+        key_stats = build_key_stats(info)
+        if key_stats:
+            st.markdown("---")
+            st.markdown("### Key Statistics")
+            cells = "".join(
+                f"<div><div class='stat-label'>{html.escape(label)}</div>"
+                f"<div class='stat-value'>{html.escape(value)}</div></div>"
+                for label, value in key_stats
+            )
+            st.markdown(f"<div class='stat-grid'>{cells}</div>", unsafe_allow_html=True)
+            st.caption("Source: Yahoo Finance. Analyst figures are third-party opinions, not advice.")
 
         # Detail Section
         st.markdown("---")
