@@ -140,6 +140,7 @@ if st.session_state.page == 'home':
             
         if submit_button and search_ticker:
             go_to_analysis(search_ticker.strip().upper())
+            st.rerun()  # render the analysis page now, not on the next interaction
         elif submit_button and not search_ticker:
             st.warning("Please enter a ticker.")
     st.markdown("</div>", unsafe_allow_html=True)
