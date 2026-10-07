@@ -1,0 +1,8 @@
+streamlit>=1.30
+# Unofficial Yahoo Finance wrapper. Yahoo changes its responses without notice,
+# so keep this up to date (pip install -U yfinance) when data stops loading.
+yfinance
+plotly>=5
+pandas
+requests
+beautifulsoup4
