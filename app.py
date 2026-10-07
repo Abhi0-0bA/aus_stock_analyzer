@@ -1,6 +1,7 @@
 import streamlit as st
 import plotly.graph_objects as go
 from modules.fetcher import get_stock_data, get_live_price, scrape_company_website
+from modules.analyzer import parse_news_item
 
 st.set_page_config(
     page_title="Australian Stock Market Analyzer", 
@@ -204,9 +205,10 @@ elif st.session_state.page == 'analysis':
             st.markdown("### News")
             if news:
                 for item in news[:5]:
-                    sentiment = "Positive" if any(word in item['title'].lower() for word in ['growth', 'rise', 'profit']) else "Neutral"
-                    st.markdown(f"**[{item['title']}]({item['link']})**")
-                    st.caption(f"{item.get('publisher', 'Unknown')} | {sentiment}")
+                    title, link, publisher = parse_news_item(item)
+                    sentiment = "Positive" if any(word in title.lower() for word in ['growth', 'rise', 'profit']) else "Neutral"
+                    st.markdown(f"**[{title}]({link})**" if link else f"**{title}**")
+                    st.caption(f"{publisher} | {sentiment}")
                     st.write("")
             else:
                 st.write("No recent news found.")

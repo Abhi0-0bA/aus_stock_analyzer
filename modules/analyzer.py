@@ -1,16 +1,40 @@
+def parse_news_item(item):
+    """
+    Normalises one yfinance news item into (title, link, publisher).
+
+    Newer yfinance versions nest article fields under a "content" object
+    (e.g. content.canonicalUrl.url); older versions returned flat keys
+    ("title", "link", "publisher"). Both shapes are supported.
+    """
+    if not isinstance(item, dict):
+        return "Untitled", None, "Unknown"
+
+    content = item.get("content") or item
+    title = content.get("title") or "Untitled"
+    link = (
+        (content.get("canonicalUrl") or {}).get("url")
+        or (content.get("clickThroughUrl") or {}).get("url")
+        or content.get("link")
+    )
+    publisher = (
+        (content.get("provider") or {}).get("displayName")
+        or content.get("publisher")
+        or "Unknown"
+    )
+    return title, link, publisher
+
+
 def format_news(news_list):
     """
     Formats the raw news list into a readable string.
     """
     if not news_list:
         return "No recent news found."
-    
+
     formatted_news = []
     for idx, item in enumerate(news_list[:5], 1):
-        title = item.get('title', 'No Title')
-        link = item.get('link', 'No Link')
-        publisher = item.get('publisher', 'Unknown')
-        formatted_news.append(f"{idx}. {title} (by {publisher})\n   Link: {link}")
+        title, link, publisher = parse_news_item(item)
+        formatted_news.append(f"{idx}. {title} (by {publisher})\n   Link: {link or 'No Link'}")
     
     return "\n\n".join(formatted_news)
 
