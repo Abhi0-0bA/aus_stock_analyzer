@@ -24,6 +24,28 @@ def parse_news_item(item):
     return title, link, publisher
 
 
+def get_dividend_yield_pct(info, price=None):
+    """
+    Returns the dividend yield as a percentage (e.g. 4.1 means 4.1%), or None.
+
+    Computed as annual dividend per share / share price. Yahoo's own
+    "dividendYield" field has changed units over time (fraction vs percent),
+    so it is deliberately not used.
+    """
+    if not info:
+        return None
+    annual_dividend = info.get("dividendRate") or info.get("trailingAnnualDividendRate")
+    price = price or info.get("currentPrice") or info.get("regularMarketPrice")
+    try:
+        annual_dividend = float(annual_dividend)
+        price = float(price)
+    except (TypeError, ValueError):
+        return None
+    if annual_dividend <= 0 or price <= 0:
+        return None
+    return annual_dividend / price * 100
+
+
 def format_news(news_list):
     """
     Formats the raw news list into a readable string.
@@ -62,7 +84,8 @@ def generate_report(data):
     report.append(f"Current Price: {info.get('currentPrice', 'N/A')} {info.get('currency', 'N/A')}")
     report.append(f"Market Cap: {info.get('marketCap', 'N/A')}")
     report.append(f"PE Ratio: {info.get('trailingPE', 'N/A')}")
-    report.append(f"Dividend Yield: {info.get('dividendYield', 'N/A')}")
+    dividend_yield = get_dividend_yield_pct(info)
+    report.append(f"Dividend Yield: {f'{dividend_yield:.2f}%' if dividend_yield is not None else 'N/A'}")
     
     report.append(f"\n--- Latest News ---")
     report.append(format_news(news))

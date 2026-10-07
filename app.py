@@ -1,7 +1,7 @@
 import streamlit as st
 import plotly.graph_objects as go
 from modules.fetcher import get_stock_data, get_live_price, scrape_company_website
-from modules.analyzer import parse_news_item
+from modules.analyzer import parse_news_item, get_dividend_yield_pct
 
 st.set_page_config(
     page_title="Australian Stock Market Analyzer", 
@@ -173,7 +173,12 @@ elif st.session_state.page == 'analysis':
         m1.metric("Price", f"${live_price:.2f}" if live_price else "N/A", help=f"Full Price: {live_price}")
         m2.metric("Market Cap", format_number(info.get('marketCap'), True), help=f"Full Value: {info.get('marketCap')}")
         m3.metric("P/E", format_number(info.get('trailingPE')), help=f"Full Value: {info.get('trailingPE')}")
-        m4.metric("Yield", f"{info.get('dividendYield', 0)*100:.2f}%" if info.get('dividendYield') else "N/A", help=f"Full Value: {info.get('dividendYield')}")
+        dividend_yield = get_dividend_yield_pct(info, live_price)
+        m4.metric(
+            "Yield",
+            f"{dividend_yield:.2f}%" if dividend_yield is not None else "N/A",
+            help=f"Annual dividend per share: {info.get('dividendRate') or info.get('trailingAnnualDividendRate') or 'N/A'}",
+        )
 
 
         # Charts
