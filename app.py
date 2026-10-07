@@ -114,6 +114,27 @@ def format_number(value, is_market_cap=False):
     # General number formatting (2 decimal places)
     return f"{num:.2f}"
 
+# --- Cached data access ---
+# Streamlit reruns the whole script on every interaction; caching stops each
+# rerun from re-requesting Yahoo Finance and re-scraping the company website.
+
+@st.cache_data(ttl=300, show_spinner="Fetching market data...")
+def load_stock_data(ticker):
+    data = get_stock_data(ticker)
+    if data is None:
+        # Raising (rather than returning None) means a failed lookup is not cached,
+        # so a temporary network error doesn't stick for the whole TTL.
+        raise LookupError(ticker)
+    return data
+
+@st.cache_data(ttl=60, show_spinner=False)
+def load_latest_price(ticker):
+    return get_live_price(ticker)
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_website_summary(url):
+    return scrape_company_website(url)
+
 # Session state for Navigation
 if 'page' not in st.session_state:
     st.session_state.page = 'home'
@@ -154,7 +175,10 @@ elif st.session_state.page == 'analysis':
         go_home()
         st.rerun()
 
-    data = get_stock_data(ticker)
+    try:
+        data = load_stock_data(ticker)
+    except LookupError:
+        data = None
     
     if data:
         info = data['info']
@@ -166,7 +190,7 @@ elif st.session_state.page == 'analysis':
         st.markdown(f"<p style='font-size: 1.2rem; color: gray;'>{info.get('sector', 'N/A')} — {info.get('industry', 'N/A')}</p>", unsafe_allow_html=True)
         
         # Price & Metrics
-        live_price = get_live_price(ticker)
+        live_price = load_latest_price(ticker)
         m1, m2, m3, m4 = st.columns(4)
         
         # We use tooltips (help parameter) to show the full number on hover
@@ -204,7 +228,7 @@ elif st.session_state.page == 'analysis':
             if website_url:
                 st.markdown(f"**Official Website:** [Link]({website_url})")
                 with st.spinner("Fetching highlights..."):
-                    st.info(scrape_company_website(website_url))
+                    st.info(load_website_summary(website_url))
 
         with col_right:
             st.markdown("### News")
