@@ -235,9 +235,8 @@ elif st.session_state.page == 'analysis':
             if news:
                 for item in news[:5]:
                     title, link, publisher = parse_news_item(item)
-                    sentiment = "Positive" if any(word in title.lower() for word in ['growth', 'rise', 'profit']) else "Neutral"
                     st.markdown(f"**[{title}]({link})**" if link else f"**{title}**")
-                    st.caption(f"{publisher} | {sentiment}")
+                    st.caption(publisher)
                     st.write("")
             else:
                 st.write("No recent news found.")
