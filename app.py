@@ -19,47 +19,73 @@ CHART_GOLD = "#ad7d1a"
 # so this CSS must not set any colours - otherwise dark mode breaks.
 st.markdown("""
     <style>
+    /* Resolution scaling: Streamlit sizes text and spacing in rem, so scaling the
+       root font size with the window width scales the whole UI. The browser
+       already knows the viewer's window size (and OS display scaling), so no
+       screen-resolution detection is needed.
+       ~16px on laptops and phones, ~18px at 1920px wide, ~20px at 2560px (2K), max 22px. */
+    html {
+        font-size: clamp(16px, calc(0.35vw + 11px), 22px) !important;
+    }
+
+    /* Use the width of large screens instead of a narrow centred column. */
+    .block-container, [data-testid="stMainBlockContainer"] {
+        max-width: min(1760px, 100%) !important;
+        padding: 2.5rem clamp(1rem, 4vw, 4rem) 5rem !important;
+    }
+
     h1, h2, h3 {
         letter-spacing: -0.02em !important;
     }
 
-    /* Dynamic Text Scaling based on viewport */
-    .stMarkdown p {
-        font-size: clamp(1.5rem, 2vw, 2rem) !important;
-        line-height: 1.6 !important;
+    .stMarkdown p, .stMarkdown li {
+        line-height: 1.65;
     }
 
-    .stMetric {
-        font-size: clamp(2rem, 3vw, 3rem) !important;
+    /* Home screen */
+    .hero {
+        text-align: center;
+        padding: clamp(2rem, 12vh, 9rem) 0 2rem;
+    }
+    .hero h1 {
+        font-size: clamp(2.4rem, 4.2vw, 4.75rem) !important;
+        margin-bottom: 0.75rem;
+    }
+    .hero p {
+        font-size: 1.25rem !important;
+        font-weight: 300;
+        opacity: 0.7;
     }
 
-    /* Luxury Search Bar */
-    .search-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 100px 0;
+    /* Analysis header */
+    .company-title {
+        font-size: clamp(2rem, 3vw, 3.25rem) !important;
+        margin-bottom: 0.25rem;
+    }
+    .company-subtitle {
+        font-size: 1.15rem !important;
+        opacity: 0.7;
     }
 
-    /* Card styling - Minimalist (translucent grey border works on light and dark) */
+    /* Metrics - minimalist (translucent grey border works on light and dark) */
     [data-testid="stMetric"] {
         background: transparent !important;
         border-bottom: 1px solid rgba(128, 128, 128, 0.3) !important;
         box-shadow: none !important;
-        padding: 10px 0 !important;
+        padding: 0.6rem 0 !important;
+    }
+    [data-testid="stMetricLabel"] p {
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.8rem !important;
+        opacity: 0.75;
     }
 
-    /* Button Luxury Style (colours from the theme's primary colour) */
+    /* Buttons (colours from the theme's primary colour) */
     .stButton > button, .stFormSubmitButton > button {
         text-transform: uppercase;
         letter-spacing: 2px;
         transition: 0.3s all ease;
-    }
-
-    /* Resolution Scaling for Layout */
-    .block-container {
-        max-width: 1200px !important;
-        padding: 3rem !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -119,12 +145,14 @@ def go_home():
 
 # --- HOME SCREEN ---
 if st.session_state.page == 'home':
-    st.markdown("<div class='search-container'>", unsafe_allow_html=True)
-    st.markdown("<h1 style='text-align: center; font-size: 4rem; margin-bottom: 1rem;'>Australian Stock Market Analyzer</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; font-size: 1.5rem; font-weight: 300; margin-bottom: 3rem;'>Pure data. Refined insights.</p>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='hero'><h1>Australian Stock Market Analyzer</h1>"
+        "<p>Pure data. Refined insights.</p></div>",
+        unsafe_allow_html=True,
+    )
     
     # Sleek Search Bar
-    col1, col2, col3 = st.columns([1, 2, 1])
+    col1, col2, col3 = st.columns([1, 1.4, 1])
     with col2:
         # Use a form to capture 'Enter' key presses
         with st.form(key='search_form', clear_on_submit=False):
@@ -140,7 +168,6 @@ if st.session_state.page == 'home':
             else:
                 go_to_analysis(ticker)
                 st.rerun()  # render the analysis page now, not on the next interaction
-    st.markdown("</div>", unsafe_allow_html=True)
 
 # --- ANALYSIS SCREEN ---
 elif st.session_state.page == 'analysis':
@@ -165,8 +192,8 @@ elif st.session_state.page == 'analysis':
         company_name = html.escape(str(info.get('longName') or info.get('shortName') or ticker))
         sector = html.escape(str(info.get('sector', 'N/A')))
         industry = html.escape(str(info.get('industry', 'N/A')))
-        st.markdown(f"<h1 style='font-size: 3rem;'>{company_name}</h1>", unsafe_allow_html=True)
-        st.markdown(f"<p style='font-size: 1.2rem; opacity: 0.7;'>{sector} — {industry}</p>", unsafe_allow_html=True)
+        st.markdown(f"<h1 class='company-title'>{company_name}</h1>", unsafe_allow_html=True)
+        st.markdown(f"<p class='company-subtitle'>{sector} — {industry}</p>", unsafe_allow_html=True)
         
         # Price & Metrics
         live_price = load_latest_price(ticker)
