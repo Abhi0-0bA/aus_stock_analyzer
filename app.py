@@ -2,7 +2,7 @@ import html
 
 import streamlit as st
 import plotly.graph_objects as go
-from modules.fetcher import get_stock_data, get_live_price, scrape_company_website
+from modules.fetcher import get_stock_data, get_live_price, scrape_company_website, normalize_ticker
 from modules.analyzer import parse_news_item, get_dividend_yield_pct
 
 st.set_page_config(
@@ -159,14 +159,18 @@ if st.session_state.page == 'home':
     with col2:
         # Use a form to capture 'Enter' key presses
         with st.form(key='search_form', clear_on_submit=False):
-            search_ticker = st.text_input("", placeholder="Enter Ticker (e.g. CBA.AX)", label_visibility="collapsed")
+            search_ticker = st.text_input("Ticker", placeholder="Enter Ticker (e.g. CBA or CBA.AX)", label_visibility="collapsed")
             submit_button = st.form_submit_button("Analyze")
-            
-        if submit_button and search_ticker:
-            go_to_analysis(search_ticker.strip().upper())
-            st.rerun()  # render the analysis page now, not on the next interaction
-        elif submit_button and not search_ticker:
-            st.warning("Please enter a ticker.")
+
+        if submit_button:
+            ticker = normalize_ticker(search_ticker)
+            if not search_ticker or not search_ticker.strip():
+                st.warning("Please enter a ticker.")
+            elif ticker is None:
+                st.warning("That doesn't look like a valid ticker. Use letters and numbers, e.g. CBA or BHP.AX.")
+            else:
+                go_to_analysis(ticker)
+                st.rerun()  # render the analysis page now, not on the next interaction
     st.markdown("</div>", unsafe_allow_html=True)
 
 # --- ANALYSIS SCREEN ---

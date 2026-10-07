@@ -1,7 +1,31 @@
+import re
+
 import yfinance as yf
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
+
+# Letters/digits plus the separators Yahoo uses (".AX" suffix, "^AXJO" indices, "-" share classes).
+_TICKER_PATTERN = re.compile(r"^\^?[A-Z0-9][A-Z0-9.\-]{0,14}$")
+
+
+def normalize_ticker(raw_ticker):
+    """
+    Cleans user input into a Yahoo Finance ticker.
+
+    Returns the ticker in upper case, adding the ASX suffix ".AX" when no
+    exchange suffix is given (e.g. "cba" -> "CBA.AX"). Index symbols that
+    start with "^" are left as they are. Returns None for invalid input.
+    """
+    if not raw_ticker:
+        return None
+    ticker = raw_ticker.strip().upper()
+    if not _TICKER_PATTERN.match(ticker):
+        return None
+    if "." not in ticker and not ticker.startswith("^"):
+        ticker += ".AX"
+    return ticker
+
 
 def get_stock_data(ticker_symbol):
     """
