@@ -11,27 +11,15 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# Chart accent: one gold that passes contrast checks on both the light and dark backgrounds.
+CHART_GOLD = "#ad7d1a"
+
 # Luxury Minimalist Styling
+# Colours and fonts come from .streamlit/config.toml ([theme.light] / [theme.dark]),
+# so this CSS must not set any colours - otherwise dark mode breaks.
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;600&display=swap');
-
-    :root {
-        --luxury-black: #1a1a1a;
-        --luxury-gold: #c5a059;
-        --luxury-white: #ffffff;
-        --luxury-gray: #fcfcfc;
-    }
-
-    /* Responsive Font Scaling and Luxury Typography */
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif !important;
-        color: var(--luxury-black);
-    }
-
-    h1, h2, h3, .stTitle {
-        font-family: 'Playfair Display', serif !important;
-        font-weight: 700 !important;
+    h1, h2, h3 {
         letter-spacing: -0.02em !important;
     }
 
@@ -45,16 +33,6 @@ st.markdown("""
         font-size: clamp(2rem, 3vw, 3rem) !important;
     }
 
-    /* Minimalist Theme Logic */
-    .stApp {
-        background-color: var(--luxury-gray) !important;
-    }
-
-    /* Dark Mode Fix: Ensure contrast is maintained */
-    [data-testid="stAppViewContainer"] {
-        background-color: var(--luxury-gray) !important;
-    }
-
     /* Luxury Search Bar */
     .search-container {
         display: flex;
@@ -63,28 +41,19 @@ st.markdown("""
         padding: 100px 0;
     }
 
-    /* Card styling - Minimalist */
+    /* Card styling - Minimalist (translucent grey border works on light and dark) */
     [data-testid="stMetric"] {
         background: transparent !important;
-        border-bottom: 1px solid #ddd !important;
+        border-bottom: 1px solid rgba(128, 128, 128, 0.3) !important;
         box-shadow: none !important;
         padding: 10px 0 !important;
     }
 
-    /* Button Luxury Style */
-    .stButton > button {
-        border-radius: 0px !important;
-        background-color: var(--luxury-black) !important;
-        color: white !important;
+    /* Button Luxury Style (colours from the theme's primary colour) */
+    .stButton > button, .stFormSubmitButton > button {
         text-transform: uppercase;
         letter-spacing: 2px;
-        font-family: 'Inter', sans-serif !important;
-        border: none !important;
         transition: 0.3s all ease;
-    }
-    
-    .stButton > button:hover {
-        background-color: var(--luxury-gold) !important;
     }
 
     /* Resolution Scaling for Layout */
@@ -197,7 +166,7 @@ elif st.session_state.page == 'analysis':
         sector = html.escape(str(info.get('sector', 'N/A')))
         industry = html.escape(str(info.get('industry', 'N/A')))
         st.markdown(f"<h1 style='font-size: 3rem;'>{company_name}</h1>", unsafe_allow_html=True)
-        st.markdown(f"<p style='font-size: 1.2rem; color: gray;'>{sector} — {industry}</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='font-size: 1.2rem; opacity: 0.7;'>{sector} — {industry}</p>", unsafe_allow_html=True)
         
         # Price & Metrics
         live_price = load_latest_price(ticker)
@@ -219,12 +188,12 @@ elif st.session_state.page == 'analysis':
         st.markdown("---")
         tab1, tab2 = st.tabs(["Performance", "Volume"])
         with tab1:
-            fig_price = go.Figure(go.Scatter(x=history.index, y=history['Close'], line=dict(color='#1a1a1a', width=2), fill='tozeroy'))
-            fig_price.update_layout(template="plotly_white", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', xaxis_title=None, yaxis_title=None)
+            fig_price = go.Figure(go.Scatter(x=history.index, y=history['Close'], line=dict(width=2, color=CHART_GOLD), fill='tozeroy'))
+            fig_price.update_layout(xaxis_title=None, yaxis_title=None)
             st.plotly_chart(fig_price, use_container_width=True)
         with tab2:
-            fig_vol = go.Figure(go.Bar(x=history.index, y=history['Volume'], marker_color='#ddd'))
-            fig_vol.update_layout(template="plotly_white", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+            fig_vol = go.Figure(go.Bar(x=history.index, y=history['Volume'], marker_color=CHART_GOLD))
+            fig_vol.update_layout(xaxis_title=None, yaxis_title=None)
             st.plotly_chart(fig_vol, use_container_width=True)
 
         # Detail Section

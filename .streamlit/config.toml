@@ -1,0 +1,26 @@
+# Theme for both light and dark mode. Colours live here (not in app.py CSS)
+# so Streamlit can switch every colour together when the viewer changes theme.
+
+[theme]
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap, sans-serif"
+headingFont = "'Playfair Display':https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&display=swap, serif"
+baseRadius = "0.25rem"
+buttonRadius = "0"
+showWidgetBorder = true
+chartCategoricalColors = ["#ad7d1a"]   # gold; passes contrast/colour checks on both backgrounds
+
+[theme.light]
+primaryColor = "#8a6110"              # deep gold, 5.3:1 on the background (readable as link/text)
+backgroundColor = "#fcfbf8"
+secondaryBackgroundColor = "#f3f0e9"
+textColor = "#1c1b19"
+borderColor = "#e3ded3"
+linkColor = "#8a6110"
+
+[theme.dark]
+primaryColor = "#d4b06a"              # soft gold, 9:1 on the background
+backgroundColor = "#121212"
+secondaryBackgroundColor = "#1c1c1b"
+textColor = "#ece8e1"
+borderColor = "#2f2d29"
+linkColor = "#d4b06a"
