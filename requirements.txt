@@ -6,3 +6,5 @@ plotly>=5
 pandas
 requests
 beautifulsoup4
+# AI research (Gemini with Google Search grounding)
+google-genai>=1.0

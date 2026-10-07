@@ -1,9 +1,12 @@
 import html
+import os
 
 import streamlit as st
+import streamlit.components.v1 as components
 import plotly.graph_objects as go
 from modules.fetcher import get_stock_data, get_live_price, scrape_company_website, normalize_ticker
 from modules.analyzer import parse_news_item, get_dividend_yield_pct, build_key_stats
+from modules.ai_research import DEFAULT_MODEL, NEWS_WINDOW_DAYS, ResearchError, research_company
 
 st.set_page_config(
     page_title="Australian Stock Market Analyzer", 
@@ -151,6 +154,38 @@ def load_latest_price(ticker):
 def load_website_summary(url):
     return scrape_company_website(url)
 
+
+# --- AI research helpers ---
+
+def get_gemini_settings():
+    """Reads the Gemini API key and model from .streamlit/secrets.toml, falling back to env vars."""
+    api_key = model = None
+    try:
+        api_key = st.secrets.get("GEMINI_API_KEY")
+        model = st.secrets.get("GEMINI_MODEL")
+    except Exception:  # no secrets.toml present
+        pass
+    api_key = api_key or os.environ.get("GEMINI_API_KEY")
+    model = model or os.environ.get("GEMINI_MODEL") or DEFAULT_MODEL
+    return api_key, model
+
+def escape_dollars(text):
+    """Stops Streamlit Markdown from treating "$1.2B ... $3" as a LaTeX formula."""
+    return text.replace("$", "\\$")
+
+def render_grounded_result(result):
+    """Shows one grounded answer as-is, with its sources and Google's Search Suggestions."""
+    with st.container(border=True):
+        st.markdown(escape_dollars(result.text))
+    if result.sources:
+        with st.expander(f"Sources ({len(result.sources)})"):
+            for title, url in result.sources:
+                safe_title = title.replace("[", "(").replace("]", ")")
+                st.markdown(f"- [{escape_dollars(safe_title)}](<{url}>)")
+    if result.search_suggestions_html:
+        # Required by the Gemini grounding terms; iframed so Google's CSS can't clash with the app's.
+        components.html(result.search_suggestions_html, height=110, scrolling=True)
+
 # Session state for Navigation
 if 'page' not in st.session_state:
     st.session_state.page = 'home'
@@ -272,12 +307,59 @@ elif st.session_state.page == 'analysis':
             st.markdown(f"<div class='stat-grid'>{cells}</div>", unsafe_allow_html=True)
             st.caption("Source: Yahoo Finance. Analyst figures are third-party opinions, not advice.")
 
+        # AI research (Gemini + Google Search grounding)
+        st.markdown("---")
+        st.markdown("### AI Research")
+        api_key, ai_model = get_gemini_settings()
+        plain_name = info.get('longName') or info.get('shortName') or ticker
+        # Kept per user session only: grounded results may not be cached or shared across users.
+        research_store = st.session_state.setdefault("ai_research", {})
+
+        if not api_key:
+            st.info(
+                "Add a Gemini API key to enable AI research: create `.streamlit/secrets.toml` "
+                "containing `GEMINI_API_KEY = \"your-key\"`. See the README for details."
+            )
+        else:
+            st.caption(
+                f"Gemini searches the web and writes a company briefing plus a summary of news from the "
+                f"last {NEWS_WINDOW_DAYS} days. Each run uses two Google-grounded Gemini requests."
+            )
+            button_label = "Regenerate AI research" if ticker in research_store else "Research this company with AI"
+            if st.button(button_label, key="run_ai_research"):
+                with st.spinner("Searching the web and writing the briefing. This can take a little while..."):
+                    try:
+                        research_store[ticker] = research_company(
+                            api_key, plain_name, ticker,
+                            sector=info.get('sector', ''), industry=info.get('industry', ''),
+                            model=ai_model,
+                        )
+                    except ResearchError as exc:
+                        st.error(str(exc))
+                    else:
+                        st.rerun()  # redraw so the button reads "Regenerate"
+
+        research = research_store.get(ticker)
+        if research:
+            st.caption(
+                f"Generated {research.generated_at:%d %b %Y %H:%M} UTC by {research.model} using Google Search. "
+                "AI-generated: it can be wrong or incomplete, so check the sources. Not financial advice."
+            )
+            tab_profile, tab_news = st.tabs([
+                "Company briefing",
+                f"News {research.news_start:%d %b} – {research.news_end:%d %b %Y}",
+            ])
+            with tab_profile:
+                render_grounded_result(research.profile)
+            with tab_news:
+                render_grounded_result(research.news)
+
         # Detail Section
         st.markdown("---")
         col_left, col_right = st.columns(2)
         with col_left:
             st.markdown("### Profile")
-            st.write(info.get('longBusinessSummary', 'No summary available.'))
+            st.markdown(escape_dollars(info.get('longBusinessSummary') or 'No summary available.'))
             
             website_url = info.get('website')
             if website_url:
@@ -286,7 +368,7 @@ elif st.session_state.page == 'analysis':
                     st.info(load_website_summary(website_url))
 
         with col_right:
-            st.markdown("### News")
+            st.markdown("### Latest Headlines")
             if news:
                 for item in news[:5]:
                     title, link, publisher = parse_news_item(item)
