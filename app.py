@@ -214,14 +214,31 @@ elif st.session_state.page == 'analysis':
         # Charts
         st.markdown("---")
         tab1, tab2 = st.tabs(["Performance", "Volume"])
+        chart_layout = dict(
+            height=420,
+            margin=dict(l=0, r=0, t=10, b=0),  # no title, so no empty space above the plot
+            xaxis_title=None,
+            yaxis_title=None,
+            hovermode="x unified",
+            showlegend=False,
+        )
         with tab1:
-            fig_price = go.Figure(go.Scatter(x=history.index, y=history['Close'], line=dict(width=2, color=CHART_GOLD), fill='tozeroy'))
-            fig_price.update_layout(xaxis_title=None, yaxis_title=None)
-            st.plotly_chart(fig_price, use_container_width=True)
+            # Line only (no fill to zero): a fill forces the y-axis to start at $0,
+            # which flattens the price movement the chart is meant to show.
+            fig_price = go.Figure(go.Scatter(
+                x=history.index, y=history['Close'], mode="lines",
+                line=dict(width=2, color=CHART_GOLD),
+                hovertemplate="$%{y:,.2f}<extra></extra>",
+            ))
+            fig_price.update_layout(**chart_layout, yaxis_tickprefix="$")
+            st.plotly_chart(fig_price, width="stretch")
         with tab2:
-            fig_vol = go.Figure(go.Bar(x=history.index, y=history['Volume'], marker_color=CHART_GOLD))
-            fig_vol.update_layout(xaxis_title=None, yaxis_title=None)
-            st.plotly_chart(fig_vol, use_container_width=True)
+            fig_vol = go.Figure(go.Bar(
+                x=history.index, y=history['Volume'], marker_color=CHART_GOLD,
+                hovertemplate="%{y:,.0f} shares<extra></extra>",
+            ))
+            fig_vol.update_layout(**chart_layout)
+            st.plotly_chart(fig_vol, width="stretch")
 
         # Detail Section
         st.markdown("---")
