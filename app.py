@@ -218,7 +218,7 @@ elif st.session_state.page == 'analysis':
             else:
                 st.write("No recent news found.")
     else:
-        st.error("Ticker not found.")
+        st.error(f"Couldn't load data for {ticker}. Check the ticker (ASX codes end in .AX) or try again in a moment.")
         if st.button("Return"):
             go_home()
             st.rerun()

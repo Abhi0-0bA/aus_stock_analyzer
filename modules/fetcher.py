@@ -6,21 +6,40 @@ from bs4 import BeautifulSoup
 def get_stock_data(ticker_symbol):
     """
     Fetches comprehensive stock data and news for a given ticker symbol.
+
+    Returns None when the ticker has no price history (unknown or delisted
+    ticker) or the price request fails. Missing info or news does not fail
+    the whole lookup.
     """
     try:
         stock = yf.Ticker(ticker_symbol)
-        info = stock.info
-        news = stock.news
         hist = stock.history(period="1y")
-        
-        return {
-            "info": info,
-            "news": news,
-            "history": hist
-        }
     except Exception as e:
-        print(f"Error fetching data for {ticker_symbol}: {e}")
+        print(f"Error fetching price history for {ticker_symbol}: {e}")
         return None
+
+    # yfinance usually returns an empty frame (not an exception) for unknown tickers.
+    if hist is None or hist.empty:
+        print(f"No price history found for {ticker_symbol}")
+        return None
+
+    try:
+        info = stock.info or {}
+    except Exception as e:
+        print(f"Error fetching info for {ticker_symbol}: {e}")
+        info = {}
+
+    try:
+        news = stock.news or []
+    except Exception as e:
+        print(f"Error fetching news for {ticker_symbol}: {e}")
+        news = []
+
+    return {
+        "info": info,
+        "news": news,
+        "history": hist
+    }
 
 def get_live_price(ticker_symbol):
     """
